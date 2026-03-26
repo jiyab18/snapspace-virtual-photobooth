@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SnapSpace 📸</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  color: white;
+  text-align: center;
+}
+
+.container {
+  padding: 20px;
+}
+
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+}
+
+.video {
+  width: 420px;
+  border-radius: 20px;
+  box-shadow: 0 0 30px rgba(255, 0, 150, 0.5);
+}
+
+.controls {
+  margin: 20px;
+}
+
+button, select {
+  padding: 10px 15px;
+  margin: 5px;
+  border-radius: 20px;
+  border: none;
+  font-size: 1rem;
+}
+
+button {
+  background: linear-gradient(45deg, #ff4d6d, #ff8fa3);
+  color: white;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  transform: scale(1.1);
+}
+
+select {
+  background: #222;
+  color: white;
+}
+
+.gallery img {
+  width: 100px;
+  margin: 5px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px #ff4d6d;
+}
+
+.countdown {
+  font-size: 3rem;
+  margin: 10px;
+  color: #ff8fa3;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>📸 SnapSpace</h1>
+
+  <video id="video" autoplay class="video"></video>
+  <canvas id="canvas" width="400" height="300" style="display:none;"></canvas>
+
+  <div class="countdown" id="countdown"></div>
+
+  <div class="controls">
+    <button onclick="startCountdown()">Capture</button>
+
+    <select onchange="changeFilter(this.value)">
+      <option value="none">Normal</option>
+      <option value="grayscale(1)">Grayscale</option>
+      <option value="sepia(1)">Sepia</option>
+      <option value="invert(1)">Invert</option>
+      <option value="contrast(2)">Contrast</option>
+      <option value="blur(2px)">Blur</option>
+    </select>
+  </div>
+
+  <button onclick="createPhotoStrip()">Download Photostrip</button>
+
+  <div class="gallery" id="gallery"></div>
+</div>
+
+<script>
+let video = document.getElementById("video");
+let canvas = document.getElementById("canvas");
+let countdownEl = document.getElementById("countdown");
+let gallery = document.getElementById("gallery");
+
+let photos = [];
+let currentFilter = "none";
+
+// Start camera
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream);
+
+// Change filter
+function changeFilter(value) {
+  currentFilter = value;
+  video.style.filter = value;
+}
+
+// Capture photo
+function takePhoto() {
+  let ctx = canvas.getContext("2d");
+  ctx.filter = currentFilter;
+
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  let image = canvas.toDataURL("image/png");
+  photos.push(image);
+
+  let img = document.createElement("img");
+  img.src = image;
+  gallery.appendChild(img);
+}
+
+// Countdown
+function startCountdown() {
+  let time = 3;
+  countdownEl.innerText = time;
+
+  let interval = setInterval(() => {
+    time--;
+    if (time === 0) {
+      clearInterval(interval);
+      countdownEl.innerText = "";
+      takePhoto();
+    } else {
+      countdownEl.innerText = time;
+    }
+  }, 1000);
+}
+
+// Photostrip
+function createPhotoStrip() {
+  let stripCanvas = document.createElement("canvas");
+  let ctx = stripCanvas.getContext("2d");
+
+  stripCanvas.width = 300;
+  stripCanvas.height = photos.length * 200;
+
+  let loaded = 0;
+
+  photos.forEach((photo, index) => {
+    let img = new Image();
+    img.src = photo;
+
+    img.onload = () => {
+      ctx.drawImage(img, 0, index * 200, 300, 200);
+      loaded++;
+
+      if (loaded === photos.length) {
+        let link = document.createElement("a");
+        link.download = "photostrip.png";
+        link.href = stripCanvas.toDataURL();
+        link.click();
+      }
+    };
+  });
+}
+</script>
+
+</body>
+</html>
